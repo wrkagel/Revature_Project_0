@@ -1,0 +1,25 @@
+{
+  "name": "project-zero",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrkagel/Revature_Project_0.git"
+  },
+  "author": "Walter Kagel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wrkagel/Revature_Project_0/issues"
+  },
+  "homepage": "https://github.com/wrkagel/Revature_Project_0#readme",
+  "dependencies": {
+    "express": "^4.17.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13"
+  }
+}
