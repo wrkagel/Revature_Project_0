@@ -6,7 +6,7 @@ export default interface AccountServices{
     createAccount(account:Account, id:string):Promise<Account>;
     //Read
     getAllAccounts(id:string):Promise<Account[]>
-    getAccountRange():Promise<Account[]>;
+    getAccountRange(amountGreaterThan:string, amountLessThan:string):Promise<Account[]>;
     getAccount(clientID:string, name:string):Promise<Account>;
     //Update
     updateAccount(account:Account):Promise<Account>;
@@ -27,7 +27,7 @@ export class AccountServicesImpl implements AccountServices{
     getAllAccounts(id:string): Promise<Account[]> {
         throw new Error("Method not implemented.");
     }
-    getAccountRange(): Promise<Account[]> {
+    getAccountRange(amountGreaterThan:string, amountLessThan:string): Promise<Account[]> {
         throw new Error("Method not implemented.");
     }
     getAccount(clientID: string, name: string): Promise<Account> {
