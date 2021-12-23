@@ -1,4 +1,7 @@
-import { CosmosClient } from "@azure/cosmos";
+// Contains all methods that directly access the database.
+// Strips resources of unnecessary information before returning.
+
+import { CosmosClient} from "@azure/cosmos";
 import { v4 } from "uuid";
 import Client from "../entities/client";
 import NotFoundError from "../errors/notFoundError";
@@ -58,12 +61,9 @@ export class ClientDao implements ClientDAO{
     }
     
     async deleteClient(clientId: string): Promise<boolean> {
-        const item = this.container.item(clientId, clientId);
-        const client:Client = (await item.read<Client>()).resource;
-        if(!client) {
-            throw new NotFoundError(`Client ${clientId} does not exist in the system`, clientId);
-        }
-        await item.delete();
+        //Check if client exists.
+        await this.getClient(clientId);
+        await this.container.item(clientId, clientId).delete<Client>();
         return true;
     }
 

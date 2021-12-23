@@ -4,7 +4,8 @@
   "description": "A simple banking application created using Express. For learning purposes only. Not a safe application.",
   "main": "index.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "start": "ts-node index.ts"
   },
   "repository": {
     "type": "git",

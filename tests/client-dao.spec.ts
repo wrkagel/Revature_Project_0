@@ -8,6 +8,13 @@ describe("Test suite for client-dao.ts", () => {
     let savedClient:Client = null;
     let savedClient2:Client = null;
 
+    // Only uncomment and run below test on an empty server and when testing the client-dao.spec.ts alone.
+    // DO NOT RUN when running other test files!
+    // it("Test getting all clients.", async () => {
+    //     const arr:Client[] = await clientDao.getAllClients();
+    //     expect(arr).toHaveLength(0);
+    // });
+
     it("Test client creation.", async () => {
         savedClient = await clientDao.createClient({fname:"Harvey", lname:"Joe Steve", id:"", accounts: []});
         expect(savedClient.id).not.toBeFalsy();
@@ -50,5 +57,4 @@ describe("Test suite for client-dao.ts", () => {
             expect(error).toBeInstanceOf(NotFoundError);
         }
     });
-
 });

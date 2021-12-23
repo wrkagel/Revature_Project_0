@@ -1,27 +1,63 @@
+//Contains all business logic and calls to the clientDAO.
+
 import Account from "../entities/account";
 import ClientDAO from "../daos/client-dao";
 import Client from "../entities/client";
 import NegativeAmountError from "../errors/negativeAmountError";
 import NotFoundError from "../errors/notFoundError";
 
-export default interface AccountServices{
+export default interface BankingServices{
     //Create
+    createClient(client:Client):Promise<Client>;
     createAccount(account:Account, id:string):Promise<Account>;
     //Read
+    getAllClients():Promise<Client[]>;
+    getClient(clientId:string):Promise<Client>;
     getAllAccounts(id:string):Promise<Account[]>
     getAccountRange(amountGreaterThan:string, amountLessThan:string, clientId:string):Promise<Account[]>;
     getAccount(clientId:string, name:string):Promise<Account>;
     //Update
+    updateClient(clientId:string, client:Client):Promise<Client>;
     deposit(amount:number, clientId:String, name:string):Promise<Account>;
     withdraw(amount:number, clientId:String, name:string):Promise<Account>;
     //Delete
+    deleteClient(clientId:string):Promise<boolean>;
     deleteAccount(clientID:string, name:string):Promise<boolean>;
 }
 
-export class AccountServicesImpl implements AccountServices{
+export class BankingServicesImpl implements BankingServices{
 
     //Dependency injection
-    constructor(private clientDAO:ClientDAO){};
+    constructor(private clientDAO:ClientDAO){}
+    
+    // Client methods passed directly to clientDAO except updateClient.
+    // updateClient() contains extra logic to ensure accounts are not updated with updateClient.
+
+    createClient(client: Client) {
+        return this.clientDAO.createClient(client);
+    }
+
+    async getAllClients() {
+        return this.clientDAO.getAllClients();
+    }
+    
+    async getClient(clientId: string) {
+        return this.clientDAO.getClient(clientId);
+    }
+    
+    // Only used for updating client information. Do not use for updating account information.
+    // Doesn't throw an error for account changes. Just doesn't do them.
+    async updateClient(clientId: string, client: Client) {
+        const oldClient:Client = await this.clientDAO.getClient(clientId);
+        client.accounts = oldClient.accounts;
+        return this.clientDAO.updateClient(clientId, client);
+    }
+    
+    async deleteClient(clientId: string) {
+        return this.clientDAO.deleteClient(clientId);
+    }
+;
+    // Account methods
 
     //Create a new account for the client of the given id.
     async createAccount(account: Account, clientId:string): Promise<Account> {
