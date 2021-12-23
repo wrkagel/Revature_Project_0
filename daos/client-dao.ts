@@ -8,7 +8,7 @@ import NotFoundError from "../errors/notFoundError";
 
 export default interface ClientDAO{
     //Create
-    createClient(client:Client):Promise<Client>;
+    createClient(client:Client): Promise<Client>;
     //Read
     getAllClients():Promise<Client[]>;
     getClient(id:string):Promise<Client>;
@@ -24,6 +24,7 @@ export class ClientDao implements ClientDAO{
     private database = this.client.database('wk-revature-project0-db');
     private container = this.database.container('Clients');
 
+    //Creating a client always sets accounts to an empty array. Accounts must be added separately.
     async createClient(client: Client): Promise<Client> {
         client.id = v4();
         client.accounts = [];
@@ -43,6 +44,7 @@ export class ClientDao implements ClientDAO{
         return result;
     }
 
+    // Returns the client or throws a NotFoundError if no client found.
     async getClient(clientId: string): Promise<Client> {
         const response = await this.container.item(clientId, clientId).read<Client>();
         const client:Client = response.resource;
@@ -53,6 +55,7 @@ export class ClientDao implements ClientDAO{
         return {id, fname, lname, accounts};
     }
 
+    // Updates the client
     async updateClient(clientId:string , client:Client): Promise<Client> {
         const response = await this.container.item(clientId, clientId).replace(client);
         const savedClient:Client = response.resource;

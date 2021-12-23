@@ -2,6 +2,7 @@
     Things to do.
     Add in proper response codes for errors beyond 404 Not Found.
     Ask Adam about how updateClient should function.
+    Ask Adam about dealing with extra information in the passed object;
 */
 
 import express from 'express';
@@ -11,6 +12,8 @@ import ClientDAO, { ClientDao } from './daos/client-dao';
 import BankingServices, { BankingServicesImpl } from './services/banking-services';
 import NotFoundError from './errors/notFoundError';
 import { Response } from 'express-serve-static-core';
+import InvalidBodyObject from './errors/invalidBodyObject';
+import NegativeAmountError from './errors/negativeAmountError';
 
 // Create app and designate port
 const app = express();
@@ -26,8 +29,11 @@ app.use(express.json());
 // Route to create a new client. Body should contain a JSON for a client;
 app.post('/clients', async (req, res) => {
     try {   
-        const client:Client = req.body;
-        await accountServices.createClient(client);
+        const {id, fname, lname, accounts} = req.body;
+        if (fname === undefined || lname === undefined) {
+            throw new InvalidBodyObject(`Client must have a first and last name defined. fname:${fname}, lname:${lname}`);
+        }
+        const client:Client = await accountServices.createClient({id, fname, lname, accounts});
         res.status(201);
         res.send(client);
     } catch (error) {
@@ -38,8 +44,11 @@ app.post('/clients', async (req, res) => {
 // Create a new account. Body should contain a JSON for the new account.
 app.post('/clients/:id/accounts', async (req, res) => {
     try {
-        const account:Account = req.body;
-        await accountServices.createAccount(account, req.params.id);
+        const {accName, balance} = req.body;
+        if(accName === undefined || balance === undefined) {
+            throw new InvalidBodyObject(`Account must have a name and a balance defined. accName:${accName}, balance:${balance}`);
+        }
+        const account = await accountServices.createAccount({accName, balance}, req.params.id);
         res.status(201);
         res.send(account);
     } catch (error) {
@@ -63,7 +72,7 @@ app.get('/clients/:id', async (req, res) => {
         const client:Client = await accountServices.getClient(req.params.id);
         res.send(client);
     } catch (error) {
-        errorHandler(error, res);
+        errorHandler(res, error);
     }
 });
 
@@ -85,7 +94,7 @@ app.get('clients/:id/accounts', async (req, res) => {
 });
 
 // Return the named account for the given client
-app.get(`clients/:id/accounts/:accName`, async (req, res) => {
+app.get(`/clients/:id/accounts/:accName`, async (req, res) => {
     try {
         const {id, accName} = req.params;
         const account:Account = await accountServices.getAccount(id, accName);
@@ -132,28 +141,45 @@ app.patch('/clients/:id/accounts/:accName/withdraw', async (req, res) => {
     }
 });
 
-app.delete('clients/:id', async (req, res) => {
+app.delete('/clients/:id', async (req, res) => {
     try {
         const {id} = req.params;
         const result:boolean = await accountServices.deleteClient(id);
+        res.status(205);
         res.send(`The deletion of ${id} has ${result ? 'succeeded' : 'failed'}.`);
     } catch (error) {
         errorHandler(res, error);
     }
 });
 
+app.delete('/clients/:id/accounts/:accName', async (req, res) => {
+    try {
+        const {id, accName} = req.params;
+        const client:Client = await accountServices.deleteAccount(id, accName);
+        res.status(205);
+        res.send(client);
+    } catch (error) {
+        errorHandler(res, error);
+    }
+});
+
+app.all('*', (req, res) => {
+    res.status(404);
+    res.send(`Invalid route or request. ${req.url}`);
+}); 
+
 app.listen(port, () => console.log('The application is running'));
 
-function errorHandler(error: any, res: Response<any, Record<string, any>, number>) {
+function errorHandler(res: Response<any, Record<string, any>, number>, error:Error) {
     if (error instanceof NotFoundError) {
-        console.log(error);
-        console.log(error.stack);
         res.status(404);
-        res.send(error.message);
-    } else {
+    } else if (error instanceof NegativeAmountError) {
+        res.status(422)
+    } else if (error instanceof InvalidBodyObject) {
+        res.status(406)
+    } else  {
         res.status(500);
-        console.log(error);
-        console.log(error.stack);
-        res.send('Unknown server error.');
+        error.message = 'Unknown server error.';
     }
+    res.send(error.message);
 }

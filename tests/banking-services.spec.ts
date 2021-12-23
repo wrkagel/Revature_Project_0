@@ -66,9 +66,9 @@ describe("Testing for account DAO", () => {
 
     // Deleting both test accounts to avoid altering database.
     it("Test deleting an account.", async () => {
-        const result:boolean = await bankingServices.deleteAccount(client.id, savedAccount.accName);
+        const result:Client = await bankingServices.deleteAccount(client.id, savedAccount.accName);
         await bankingServices.deleteAccount(client.id, savedAccount2.accName);
-        expect(result).toBe(true);
+        expect(result.accounts).toEqual([savedAccount]);
         try {
             await bankingServices.getAccount(client.id, savedAccount.accName);
         } catch (error) {

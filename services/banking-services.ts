@@ -22,7 +22,7 @@ export default interface BankingServices{
     withdraw(amount:number, clientId:String, name:string):Promise<Account>;
     //Delete
     deleteClient(clientId:string):Promise<boolean>;
-    deleteAccount(clientID:string, name:string):Promise<boolean>;
+    deleteAccount(clientID:string, name:string):Promise<Client>;
 }
 
 export class BankingServicesImpl implements BankingServices{
@@ -49,6 +49,7 @@ export class BankingServicesImpl implements BankingServices{
     // Doesn't throw an error for account changes. Just doesn't do them.
     async updateClient(clientId: string, client: Client) {
         const oldClient:Client = await this.clientDAO.getClient(clientId);
+        client.id = oldClient.id;
         client.accounts = oldClient.accounts;
         return this.clientDAO.updateClient(clientId, client);
     }
@@ -133,14 +134,14 @@ export class BankingServicesImpl implements BankingServices{
         return result.accounts.find(a=>a.accName===name);
     }
 
-    async deleteAccount(clientId: string, name: string): Promise<boolean> {
+    async deleteAccount(clientId: string, name: string): Promise<Client> {
         //If the client doesn't exist a NotFoundError will be thrown
         const client:Client = await this.clientDAO.getClient(clientId);
         const index = client.accounts.findIndex(a=>a.accName === name);
         if(index !== -1) {
             client.accounts.splice(index, 1);
-            await this.clientDAO.updateClient(client.id, client);
-            return true;
+            const result:Client = await this.clientDAO.updateClient(client.id, client);
+            return result;
         } else {
             throw new NotFoundError(`Client ${clientId} does not have an account named ${name}`, clientId);
         }
