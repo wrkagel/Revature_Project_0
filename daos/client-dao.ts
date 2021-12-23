@@ -12,26 +12,26 @@ export default interface ClientDAO{
     //Update
     updateClient(id:string, client:Client):Promise<Client>;
     //Delete
-    deleteClient(id:string):Promise<Client>;
+    deleteClient(id:string):Promise<boolean>;
 }
 
-const client:CosmosClient = new CosmosClient(process.env.COSMOS_CONNECTION);
-const database = client.database('wk-revature-project0-db');
-const container = database.container('Clients');
-
 export class ClientDao implements ClientDAO{
+
+    private client:CosmosClient = new CosmosClient(process.env.COSMOS_CONNECTION);
+    private database = this.client.database('wk-revature-project0-db');
+    private container = this.database.container('Clients');
 
     async createClient(client: Client): Promise<Client> {
         client.id = v4();
         client.accounts = [];
-        const response = await container.items.create<Client>(client);
+        const response = await this.container.items.create<Client>(client);
         const savedClient:Client = response.resource;
         const {id, fname, lname, accounts} = savedClient;
         return {id, fname, lname, accounts};
     }
 
     async getAllClients(): Promise<Client[]> {
-        const response = await container.items.readAll<Client>().fetchAll();
+        const response = await this.container.items.readAll<Client>().fetchAll();
         const clients:Client[] = response.resources;
         const result:Client[] = clients.map<Client>(client => {
             const {id, fname, lname, accounts} = client;
@@ -41,7 +41,7 @@ export class ClientDao implements ClientDAO{
     }
 
     async getClient(clientId: string): Promise<Client> {
-        const response = await container.item(clientId, clientId).read<Client>();
+        const response = await this.container.item(clientId, clientId).read<Client>();
         const client:Client = response.resource;
         if(!client) {
             throw new NotFoundError(`ID:${clientId} returned 0 clients`, clientId);
@@ -51,21 +51,20 @@ export class ClientDao implements ClientDAO{
     }
 
     async updateClient(clientId:string , client:Client): Promise<Client> {
-        client.id = clientId;
-        const response = await container.items.upsert<Client>(client);
+        const response = await this.container.item(clientId, clientId).replace(client);
         const savedClient:Client = response.resource;
         const {id, fname, lname, accounts} = savedClient;
         return {id, fname, lname, accounts};
     }
     
-    async deleteClient(clientId: string): Promise<Client> {
-        const item = container.item(clientId, clientId);
+    async deleteClient(clientId: string): Promise<boolean> {
+        const item = this.container.item(clientId, clientId);
         const client:Client = (await item.read<Client>()).resource;
         if(!client) {
             throw new NotFoundError(`Client ${clientId} does not exist in the system`, clientId);
         }
         await item.delete();
-        return client;
+        return true;
     }
 
 }

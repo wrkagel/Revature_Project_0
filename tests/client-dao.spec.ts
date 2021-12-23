@@ -40,9 +40,10 @@ describe("Test suite for client-dao.ts", () => {
     });
 
     it("Test delete a client.", async () => {
-        await clientDao.deleteClient(savedClient.id);
+        const result = await clientDao.deleteClient(savedClient.id);
         //Delete other client to maintain database
         await clientDao.deleteClient(savedClient2.id);
+        expect(result).toBe(true);
         try {
             await clientDao.getClient(savedClient.id);
         } catch (error) {

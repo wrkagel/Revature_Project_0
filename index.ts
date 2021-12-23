@@ -67,8 +67,8 @@ app.get('clients/:id/accounts', async (req, res) => {
 // Return the named account for the given client
 app.get(`clients/:id/accounts/:accName`, async (req, res) => {
     const {id, accName} = req.params;
-    const account:Account = await accountServices.getAccount(id, accName);
-    res.send(account);
+    const client:Client = await accountServices.getAccount(id, accName);
+    res.send(client);
 });
 
 // Replace the given client with the client in the body of the request
@@ -76,6 +76,22 @@ app.put('/clients/:id', async (req, res) => {
     const id:string = req.params.id;
     const client:Client = req.body;
     const result:Client = await clientDao.updateClient(id, client);
+    res.send(result);
+});
+
+// Deposit money into an account
+app.patch('/clients/:id/accounts/:accName/deposit', async (req, res) => {
+    const {id, accName} = req.params;
+    const {amount} = req.body;
+    const result:Account = await accountServices.deposit(amount, id, accName);
+    res.send(result);
+});
+
+// Withdraw money from an account
+app.patch('/clients/:id/accounts/:accName/withdraw', async (req, res) => {
+    const {id, accName} = req.params;
+    const {amount} = req.body;
+    const result:Account = await accountServices.withdraw(amount, id, accName);
     res.send(result);
 });
 
