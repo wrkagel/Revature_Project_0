@@ -68,7 +68,7 @@ describe("Testing for account DAO", () => {
     it("Test deleting an account.", async () => {
         const result:Client = await bankingServices.deleteAccount(client.id, savedAccount.accName);
         await bankingServices.deleteAccount(client.id, savedAccount2.accName);
-        expect(result.accounts).toEqual([savedAccount]);
+        expect(result.accounts).toEqual([savedAccount2]);
         try {
             await bankingServices.getAccount(client.id, savedAccount.accName);
         } catch (error) {

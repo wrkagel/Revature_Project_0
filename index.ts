@@ -11,7 +11,6 @@ import Account from './entities/account';
 import ClientDAO, { ClientDao } from './daos/client-dao';
 import BankingServices, { BankingServicesImpl } from './services/banking-services';
 import NotFoundError from './errors/notFoundError';
-import { Response } from 'express-serve-static-core';
 import InvalidBodyObject from './errors/invalidBodyObject';
 import NegativeAmountError from './errors/negativeAmountError';
 
@@ -26,160 +25,172 @@ const accountServices:BankingServices = new BankingServicesImpl(clientDao);
 // Ensure that the body of requests is automatically converted into a JSON object.
 app.use(express.json());
 
-// Route to create a new client. Body should contain a JSON for a client;
-app.post('/clients', async (req, res) => {
-    try {   
-        const {id, fname, lname, accounts} = req.body;
-        if (fname === undefined || lname === undefined) {
-            throw new InvalidBodyObject(`Client must have a first and last name defined. fname:${fname}, lname:${lname}`);
+app.route('/clients')
+    // Route to create a new client. Body should contain a JSON for a client;
+    .post(async (req, res, next) => {
+        try {
+            const {id, fname, lname, accounts} = req.body;
+            if (fname === undefined || lname === undefined) {
+                throw new InvalidBodyObject(`Client must have a first and last name defined. fname:${fname}, lname:${lname}`);
+            }
+            const client:Client = await accountServices.createClient({id, fname, lname, accounts});
+            res.status(201);
+            res.send(client);
+        } catch (error) {
+            next(error);
         }
-        const client:Client = await accountServices.createClient({id, fname, lname, accounts});
-        res.status(201);
-        res.send(client);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
-
-// Create a new account. Body should contain a JSON for the new account.
-app.post('/clients/:id/accounts', async (req, res) => {
-    try {
-        const {accName, balance} = req.body;
-        if(accName === undefined || balance === undefined) {
-            throw new InvalidBodyObject(`Account must have a name and a balance defined. accName:${accName}, balance:${balance}`);
+    })
+    // Return all clients
+    .get(async (req, res, next) => {
+        try {
+            const clients:Client[] = await accountServices.getAllClients();
+            res.send(clients);              
+        } catch (error) {
+            next(error);
         }
-        const account = await accountServices.createAccount({accName, balance}, req.params.id);
-        res.status(201);
-        res.send(account);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
+    });
 
-// Return all clients
-app.get('/clients', async (req, res) => {
-    try {
-        const clients:Client[] = await accountServices.getAllClients();
-        res.send(clients);  
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
+app.route('/clients/:id')
+    // Replace the given client with the client in the body of the request
+    .put(async (req, res, next) => {
+        try {
+            const id:string = req.params.id;
+            const {id:id2, fname, lname, accounts} = req.body;
+            if(!(id2 === "" || id2 === id)) {
+                throw new InvalidBodyObject(`The id of the client object must either be \"\" or match the id of the request parameter. reqId: ${id}, bodyId: ${id2}`);
+            }
+            const result:Client = await accountServices.updateClient(id, {id, fname, lname, accounts});
+            res.send(result);
+        } catch (error) {
+            next(error);
+        }
 
-// Return a client based on their id
-app.get('/clients/:id', async (req, res) => {
-    try {
-        const client:Client = await accountServices.getClient(req.params.id);
-        res.send(client);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
-
-// Return all accounts for a given client. Use amounts for range of accounts if specified.
-app.get('clients/:id/accounts', async (req, res) => {
-    try {
-        const {amountLessThan = null, amountGreaterThan = null} = req.query;
+    })    
+    // Return a client based on their id
+    .get(async (req, res, next) => {
+        try {
+            const client:Client = await accountServices.getClient(req.params.id);
+            res.send(client);    
+        } catch (error) {
+            next(error);
+        }
+    })
+    // Delete a client based on id.
+    .delete(async (req, res, next) => {
+        try {
         const {id} = req.params;
-        if(amountLessThan || amountGreaterThan) {
-            const accounts: Account[] = await accountServices.getAccountRange(amountGreaterThan.toString(), amountLessThan.toString(), id);
-            res.send(accounts);
-        } else {
-            const accounts:Account[] =  await accountServices.getAllAccounts(req.params.id);
-            res.send(accounts);
+        const result:boolean = await accountServices.deleteClient(id);
+        res.status(205);
+        res.send(`The deletion of ${id} has ${result ? 'succeeded' : 'failed'}.`);
+        } catch (error) {
+            next(error);
         }
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
+    });
 
+
+app.route('/clients/:id/accounts')
+    // Create a new account. Body should contain a JSON for the new account.
+    .post(async (req, res, next) => {
+        try {
+            const {accName, balance} = req.body;
+            if(!accName || !(Number(balance))) {
+                throw new InvalidBodyObject(`Account must have a name and balance must be a number. accName:${accName}, balance:${balance}`);
+            }
+            const account = await accountServices.createAccount({accName, balance}, req.params.id);
+            res.status(201);
+            res.send(account);            
+        } catch (error) {
+            next(error);
+        }
+    })
+    // Return all accounts for a given client. Use amounts for range of accounts if specified.
+    .get(async (req, res, next) => {
+        try {
+            const {amountLessThan, amountGreaterThan} = req.query;
+            const {id} = req.params;
+            if(amountLessThan || amountGreaterThan) {
+                const accounts: Account[] = await accountServices.getAccountRange(String(amountGreaterThan), String(amountLessThan), id);
+                res.send(accounts);
+            } else {
+                const accounts:Account[] =  await accountServices.getAllAccounts(req.params.id);
+                res.send(accounts);
+            }
+        } catch (error) {
+            next(error);
+        }
+    });
+
+app.route(`/clients/:id/accounts/:accName`)
 // Return the named account for the given client
-app.get(`/clients/:id/accounts/:accName`, async (req, res) => {
-    try {
-        const {id, accName} = req.params;
-        const account:Account = await accountServices.getAccount(id, accName);
-        res.send(account);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
+    .get(async (req, res, next) => {
+        try {
+            const {id, accName} = req.params;
+            const account:Account = await accountServices.getAccount(id, accName);
+            res.send(account);
+        } catch (error) {
+            next(error);
+        }
+    })
+    .delete(async (req, res, next) => {
+        try {
+            const {id, accName} = req.params;
+            const client:Client = await accountServices.deleteAccount(id, accName);
+            res.status(205);
+            res.send(client);      
+        } catch (error) {
+            next(error);
+        }
+    });
 
-// Replace the given client with the client in the body of the request
-app.put('/clients/:id', async (req, res) => {
-    try {
-        const id:string = req.params.id;
-        const client:Client = req.body;
-        const result:Client = await accountServices.updateClient(id, client);
-        res.send(result);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
+
 
 // Deposit money into an account
-app.patch('/clients/:id/accounts/:accName/deposit', async (req, res) => {
+app.patch('/clients/:id/accounts/:accName/deposit', async (req, res, next) => {
     try {
         const {id, accName} = req.params;
         const {amount} = req.body;
         const result:Account = await accountServices.deposit(amount, id, accName);
         res.send(result);
     } catch (error) {
-        errorHandler(res, error);
+        next(error);
     }
-
 });
 
 // Withdraw money from an account
-app.patch('/clients/:id/accounts/:accName/withdraw', async (req, res) => {
+app.patch('/clients/:id/accounts/:accName/withdraw', async (req, res, next) => {
     try {
         const {id, accName} = req.params;
         const {amount} = req.body;
         const result:Account = await accountServices.withdraw(amount, id, accName);
-        res.send(result);        
+        res.send(result);
     } catch (error) {
-        errorHandler(res, error);
+        next(error);
     }
 });
 
-app.delete('/clients/:id', async (req, res) => {
-    try {
-        const {id} = req.params;
-        const result:boolean = await accountServices.deleteClient(id);
-        res.status(205);
-        res.send(`The deletion of ${id} has ${result ? 'succeeded' : 'failed'}.`);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
-
-app.delete('/clients/:id/accounts/:accName', async (req, res) => {
-    try {
-        const {id, accName} = req.params;
-        const client:Client = await accountServices.deleteAccount(id, accName);
-        res.status(205);
-        res.send(client);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
-
-app.all('*', (req, res) => {
+app.all('/', (req, res, next) => {
     res.status(404);
-    res.send(`Invalid route or request. ${req.url}`);
-}); 
+    res.send(`Invalid route or http request verb. ${req.url}`);
+});
 
-app.listen(port, () => console.log('The application is running'));
-
-function errorHandler(res: Response<any, Record<string, any>, number>, error:Error) {
-    if (error instanceof NotFoundError) {
+// Custom error handler
+app.use((err, req, res, next) => {
+    if(res.headersSent) {
+        return next(err);
+    }
+    if (err instanceof NotFoundError) {
         res.status(404);
-    } else if (error instanceof NegativeAmountError) {
+    } else if (err instanceof NegativeAmountError) {
         res.status(422)
-    } else if (error instanceof InvalidBodyObject) {
+    } else if (err instanceof InvalidBodyObject) {
         res.status(406)
     } else  {
         res.status(500);
-        error.message = 'Unknown server error.';
+        console.log(err.message);
+        err.message = 'Unknown server error.';
     }
-    res.send(error.message);
-}
+    console.log(err.stack);
+    res.send(err.message);
+});
+
+app.listen(port, () => console.log('The application is running'));

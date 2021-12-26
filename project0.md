@@ -53,7 +53,7 @@ PATCH /clients/7/accounts/vacationfund/withdraw => deposit given amount (Body {"
 	return 422 if insufficient funds
 
 # Presentation
-- You will be presenting before me and a memmber of QC.
+- You will be presenting before me and a member of QC.
 - Your should aim to make your presentation about 5 minutes long.
 - QC might ask a question or two about your project
 - You will run your postman tests to show that your endpoints work

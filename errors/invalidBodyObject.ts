@@ -1,4 +1,4 @@
-// Error that indicates the JSON object contained in the body of a request does not have the correct form.
+// Error that indicates the JSON contained in the body of a request is missing required parameters.
 
 export default class InvalidBodyObject extends Error {
 
