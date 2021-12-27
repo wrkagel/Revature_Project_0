@@ -6,8 +6,10 @@ import NotFoundError from "../errors/notFoundError";
 //import OverdrawError from "../errors/negativeBalanceError";
 import BankingServices, { BankingServicesImpl } from "../services/banking-services";
 
-describe("Testing for account DAO", () => {
+//Only account services are tested here, since all client functions are passed directly to the DAO.
+describe("Testing account services.", () => {
 
+    // Since accounts must have a client a client is created first.
     const clientDao:ClientDAO = new ClientDao();
     const bankingServices:BankingServices = new BankingServicesImpl(clientDao);
     let client:Client = {
@@ -28,8 +30,6 @@ describe("Testing for account DAO", () => {
         savedAccount2 = await bankingServices.createAccount({accName:"moneyBag", balance:2}, client.id);
     });
 
-    //Add a second account to test getAllAccounts
-
     it("Test getting all accounts for a client", async () => {
         const returnedAccounts:Account[] = await bankingServices.getAllAccounts(client.id);
         expect(returnedAccounts).toContainEqual(savedAccount);
@@ -49,6 +49,14 @@ describe("Testing for account DAO", () => {
     it("Test depositing to an account.", async () => {
         const returnedAccount:Account = await bankingServices.deposit(100, client.id, 'beerMoney');
         expect(returnedAccount.balance).toBe(500);
+    });
+
+    it("Test depositing with negative.", async () => {
+        try {
+            await bankingServices.deposit(-20, client.id, 'beerMoney');
+        } catch (error) {
+            expect(error).toBeInstanceOf(NegativeAmountError);   
+        }
     });
 
     it("Test withdrawing from an account.", async () => {
