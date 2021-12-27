@@ -185,12 +185,14 @@ app.patch('/clients/:id/accounts/:accName/withdraw', async (req, res, next) => {
     }
 });
 
+// Catch all invalid routes and requests. Return a 404 error code.
 app.all('/', (req, res, next) => {
     res.status(404);
     res.send(`Invalid route or http request verb. ${req.url}`);
 });
 
-// Custom error handler
+// Custom error handler. Returns proper status code based on the type of the error thrown.
+// If the error isn't of any of the checked types, then it returns that it is an unknown server error.
 app.use((err, req, res, next) => {
     if(res.headersSent) {
         return next(err);
