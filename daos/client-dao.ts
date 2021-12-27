@@ -29,18 +29,14 @@ export class ClientDao implements ClientDAO{
         client.id = v4();
         client.accounts = [];
         const response = await this.container.items.create<Client>(client);
-        const savedClient:Client = response.resource;
-        const {id, fname, lname, accounts} = savedClient;
-        return {id, fname, lname, accounts};
+        return this.getClientParams(response.resource);
     }
 
+    // Returns all clients currently in the database.
     async getAllClients(): Promise<Client[]> {
         const response = await this.container.items.readAll<Client>().fetchAll();
         const clients:Client[] = response.resources;
-        const result:Client[] = clients.map<Client>(client => {
-            const {id, fname, lname, accounts} = client;
-            return {id, fname, lname, accounts};
-        });
+        const result:Client[] = clients.map<Client>(client => this.getClientParams(client));
         return result;
     }
 
@@ -51,18 +47,16 @@ export class ClientDao implements ClientDAO{
         if(!client) {
             throw new NotFoundError(`ID:${clientId} returned 0 clients`, clientId);
         }
-        const {id, fname, lname, accounts} = client;
-        return {id, fname, lname, accounts};
+        return this.getClientParams(client);
     }
 
-    // Updates the client
+    // Updates the client if it exists or throws notFoundError.
     async updateClient(clientId:string , client:Client): Promise<Client> {
         const response = await this.container.item(clientId, clientId).replace(client);
-        const savedClient:Client = response.resource;
-        const {id, fname, lname, accounts} = savedClient;
-        return {id, fname, lname, accounts};
+        return this.getClientParams(response.resource);
     }
     
+    // Deletes the client if it exists or throws notFoundError.
     async deleteClient(clientId: string): Promise<boolean> {
         //Check if client exists.
         await this.getClient(clientId);
@@ -70,4 +64,9 @@ export class ClientDao implements ClientDAO{
         return true;
     }
 
+    // Strips off all unneeded DB information from the client;
+    private getClientParams(client:Client):Client {
+        const {id, fname, lname, accounts} = client;
+        return {id, fname, lname, accounts};
+    }
 }

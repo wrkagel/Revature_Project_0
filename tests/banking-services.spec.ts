@@ -37,7 +37,7 @@ describe("Testing for account DAO", () => {
     });
 
     it("Test getting an account range", async () => {
-        const returnedAccounts:Account[] = await bankingServices.getAccountRange("5", "401", client.id);
+        const returnedAccounts:Account[] = await bankingServices.getAccountRange(5, 401, client.id);
         expect(returnedAccounts[0]).toEqual(savedAccount);
     });
 

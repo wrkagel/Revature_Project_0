@@ -26,7 +26,7 @@ const accountServices:BankingServices = new BankingServicesImpl(clientDao);
 app.use(express.json());
 
 app.route('/clients')
-    // Route to create a new client. Body should contain a JSON for a client;
+    // Route to create a new client. Body should contain JSON for a client;
     .post(async (req, res, next) => {
         try {
             const {id, fname, lname, accounts} = req.body;
@@ -51,13 +51,15 @@ app.route('/clients')
     });
 
 app.route('/clients/:id')
-    // Replace the given client with the client in the body of the request
+    // Replace the given client with the client in the body of the request.
+    // 404 Error if client doesn't exist.
+    // 406 Error if the id parameter of the body of the request isn't either a blank string or matches the id in the URI.
     .put(async (req, res, next) => {
         try {
             const id:string = req.params.id;
             const {id:id2, fname, lname, accounts} = req.body;
             if(!(id2 === "" || id2 === id)) {
-                throw new InvalidBodyObject(`The id of the client object must either be \"\" or match the id of the request parameter. reqId: ${id}, bodyId: ${id2}`);
+                throw new InvalidBodyObject(`The id of the client object must either be \"\" or match the id of the client in the URL. reqId: ${id}, bodyId: ${id2}`);
             }
             const result:Client = await accountServices.updateClient(id, {id, fname, lname, accounts});
             res.send(result);
@@ -67,6 +69,7 @@ app.route('/clients/:id')
 
     })    
     // Return a client based on their id
+    // 404 error if no such client exists
     .get(async (req, res, next) => {
         try {
             const client:Client = await accountServices.getClient(req.params.id);
@@ -76,6 +79,7 @@ app.route('/clients/:id')
         }
     })
     // Delete a client based on id.
+    // 404 error if no such client exists
     .delete(async (req, res, next) => {
         try {
         const {id} = req.params;
@@ -90,13 +94,17 @@ app.route('/clients/:id')
 
 app.route('/clients/:id/accounts')
     // Create a new account. Body should contain a JSON for the new account.
+    // 406 Error if the JSON in the body has no accName and/or balance parameter.
+    // 406 Error if the balance parameter is not a number.
+    // 422 Error if the balance is a negative number.
     .post(async (req, res, next) => {
         try {
             const {accName, balance} = req.body;
-            if(!accName || !(Number(balance))) {
+            const numBalance = Number(balance);
+            if(!(accName && numBalance)) {
                 throw new InvalidBodyObject(`Account must have a name and balance must be a number. accName:${accName}, balance:${balance}`);
             }
-            const account = await accountServices.createAccount({accName, balance}, req.params.id);
+            const account = await accountServices.createAccount({accName, balance:numBalance}, req.params.id);
             res.status(201);
             res.send(account);            
         } catch (error) {
@@ -104,12 +112,15 @@ app.route('/clients/:id/accounts')
         }
     })
     // Return all accounts for a given client. Use amounts for range of accounts if specified.
+    // 404 error if no such client exists.
     .get(async (req, res, next) => {
         try {
             const {amountLessThan, amountGreaterThan} = req.query;
+            const numAmountLessThan = Number(amountLessThan);
+            const numAmountGreaterThan = Number(amountGreaterThan);
             const {id} = req.params;
             if(amountLessThan || amountGreaterThan) {
-                const accounts: Account[] = await accountServices.getAccountRange(String(amountGreaterThan), String(amountLessThan), id);
+                const accounts: Account[] = await accountServices.getAccountRange(numAmountGreaterThan, numAmountLessThan, id);
                 res.send(accounts);
             } else {
                 const accounts:Account[] =  await accountServices.getAllAccounts(req.params.id);
@@ -121,7 +132,8 @@ app.route('/clients/:id/accounts')
     });
 
 app.route(`/clients/:id/accounts/:accName`)
-// Return the named account for the given client
+// Return the named account for the given client. 
+// 404 error if the account doesn't exist.
     .get(async (req, res, next) => {
         try {
             const {id, accName} = req.params;
@@ -131,6 +143,8 @@ app.route(`/clients/:id/accounts/:accName`)
             next(error);
         }
     })
+    // Delete an account based on the given id.
+    // 404 error if client doesn't exist.
     .delete(async (req, res, next) => {
         try {
             const {id, accName} = req.params;
@@ -144,7 +158,9 @@ app.route(`/clients/:id/accounts/:accName`)
 
 
 
-// Deposit money into an account
+// Deposit money into an account. JSON in body of request should have a positive number amount.
+// 404 error if the account doesn't exist.
+// 422 error if the deposit amount is not positive.
 app.patch('/clients/:id/accounts/:accName/deposit', async (req, res, next) => {
     try {
         const {id, accName} = req.params;
@@ -156,7 +172,8 @@ app.patch('/clients/:id/accounts/:accName/deposit', async (req, res, next) => {
     }
 });
 
-// Withdraw money from an account
+// Withdraw money from an account. JSON in body of request should have a positive number amount.
+// 
 app.patch('/clients/:id/accounts/:accName/withdraw', async (req, res, next) => {
     try {
         const {id, accName} = req.params;

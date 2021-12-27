@@ -14,7 +14,7 @@ export default interface BankingServices{
     getAllClients():Promise<Client[]>;
     getClient(clientId:string):Promise<Client>;
     getAllAccounts(id:string):Promise<Account[]>
-    getAccountRange(amountGreaterThan:string, amountLessThan:string, clientId:string):Promise<Account[]>;
+    getAccountRange(amountGreaterThan:number, amountLessThan:number, clientId:string):Promise<Account[]>;
     getAccount(clientId:string, name:string):Promise<Account>;
     //Update
     updateClient(clientId:string, client:Client):Promise<Client>;
@@ -80,7 +80,8 @@ export class BankingServicesImpl implements BankingServices{
         return client.accounts;
     }
     
-    async getAccountRange(amountGreaterThan:string, amountLessThan:string, clientId:string): Promise<Account[]> {
+    // Get a range of accounts for the client
+    async getAccountRange(amountGreaterThan:number, amountLessThan:number, clientId:string): Promise<Account[]> {
         //If the client doesn't exist a NotFoundError will be thrown
         const client:Client = await this.clientDAO.getClient(clientId);
         const numGreatThan = Number(amountGreaterThan);
