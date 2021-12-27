@@ -16,3 +16,7 @@
 - Withdraw from an account
 - Deposit to an account
 - Delete an account
+### Errors
+- For all operations if the resource does not exist a 404 error will be returned.
+- Invalid types or missing data will return a 406 error.
+- Any operation that would result in a negative amount will throw a 422 error.
