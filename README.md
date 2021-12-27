@@ -1,5 +1,5 @@
 # Project Zero
-- Test project. Not for actual use.
+- Test project. Not a safe application for practical use.
 ## BankingApp
 - This runs a simple express.js web server that is designed for banking operations.
 - It uses an Azure CosmosDB as the database where client and account information is stored.
