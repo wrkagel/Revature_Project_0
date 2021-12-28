@@ -89,7 +89,7 @@ export class BankingServicesImpl implements BankingServices{
          return client.accounts.filter(a => {
             if(numGreatThan && (a.balance < numGreatThan)) return false;
             if(numLessThan && (a.balance > numLessThan)) return false;
-            return true; 
+            return true;
         });
     }
     

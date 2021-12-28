@@ -18,6 +18,7 @@ export default interface ClientDAO{
     deleteClient(id:string):Promise<boolean>;
 }
 
+// Contains all methods that interact directly with the database.
 export class ClientDao implements ClientDAO{
 
     private client:CosmosClient = new CosmosClient(process.env.COSMOS_CONNECTION);
@@ -64,7 +65,7 @@ export class ClientDao implements ClientDAO{
         return true;
     }
 
-    // Strips off all unneeded DB information from the client;
+    // Strips off all unneeded DB information from the client.
     private getClientParams(client:Client):Client {
         const {id, fname, lname, accounts} = client;
         return {id, fname, lname, accounts};
