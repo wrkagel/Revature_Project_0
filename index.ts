@@ -61,6 +61,9 @@ app.route('/clients/:id')
             if(!(id2 === "" || id2 === id)) {
                 throw new InvalidBodyObject(`The id of the client object must either be \"\" or match the id of the client in the URL. reqId: ${id}, bodyId: ${id2}`);
             }
+            if (fname === undefined || lname === undefined) {
+                throw new InvalidBodyObject(`Client must have a first and last name defined. fname:${fname}, lname:${lname}`);
+            }
             const result:Client = await accountServices.updateClient(id, {id, fname, lname, accounts});
             res.send(result);
         } catch (error) {
