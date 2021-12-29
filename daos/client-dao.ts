@@ -46,7 +46,7 @@ export class ClientDao implements ClientDAO{
         const response = await this.container.item(clientId, clientId).read<Client>();
         const client:Client = response.resource;
         if(!client) {
-            throw new NotFoundError(`ID:${clientId} returned 0 clients`, clientId);
+            throw new NotFoundError(`There are no clients that match the given id. id:${clientId}`, clientId);
         }
         return this.getClientParams(client);
     }
