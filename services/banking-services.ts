@@ -65,6 +65,9 @@ export class BankingServicesImpl implements BankingServices{
         //If the client doesn't exist a NotFoundError will be thrown
         const client:Client = await this.clientDAO.getClient(clientId);
         //Cannot have a negative balance on an account.
+        if(client.accounts.findIndex(acc => acc.accName === account.accName) !== -1){
+            throw new NegativeAmountError(`Account ${account.accName} for client ${clientId} already exists.`, clientId, account.accName);
+        }
         if(account.balance < 0) {
             throw new NegativeAmountError(`Account ${account.accName} for client ${clientId} cannot be created with a negative balance.`, clientId, account.accName);
         }
